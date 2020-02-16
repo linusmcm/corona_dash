@@ -2,3 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
+shape_files/
+states_provinces/

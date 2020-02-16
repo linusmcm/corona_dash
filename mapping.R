@@ -2,11 +2,15 @@
 # install.packages("echarts4r")
 # install.packages("remotes")
 # install.packages("geojsonio")
-install.packages("spdplyr")
+#install.packages("spdplyr")
 # remotes::install_github('JohnCoene/echarts4r.maps')
 # remotes::install_github("JohnCoene/echarts4r.assets")
-
+install.packages("rnaturalearth")
+#-----------------------------------------------------------------------#
+setwd("E:/corona_dash")
+#-----------------------------------------------------------------------#
 library(sp)
+library(sf)
 library(spdplyr)
 library(lubridate)
 library(janitor)
@@ -21,32 +25,25 @@ library(echarts4r.maps)
 library(echarts4r.assets)
 library(rgdal)
 library(geojsonio)
+library(rnaturalearth)
 library(tidyverse)
 
-
-
-
-
-
-
+#-----------------------------------------------------------------------#
 pal <- colorNumeric("viridis", NULL)
-
 em_bank_list <- as.vector(echarts4r.maps::em_bank())
-
-
-report_df <- read_csv(getURL("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/02-13-2020.csv")) %>% clean_names("snake")
-
-
+#-----------------------------------------------------------------------#
+report_df <- read_csv(getURL("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/02-15-2020.csv")) %>% clean_names("snake")
+#-----------------------------------------------------------------------#
 cleaned_df <- report_df %>% 
               filter(country_region != "Others") %>% 
               mutate(country_region = if_else(country_region == "Mainland China", "China",country_region)) %>%
-              mutate(country_region = if_else(country_region == "Hong Kong", "China",country_region)) %>% #i know not cool but needed for mapping package
-              mutate(country_region = if_else(country_region == "Taiwan", "China",country_region)) %>% #i know not cool but needed for mapping package
+              #mutate(country_region = if_else(country_region == "Hong Kong", "China",country_region)) %>% #i know not cool but needed for mapping package
+              #mutate(country_region = if_else(country_region == "Taiwan", "China",country_region)) %>% #i know not cool but needed for mapping package
               mutate(country_region = if_else(country_region == "UK", "United_Kingdom",country_region)) %>% 
               mutate(country_region = if_else(country_region == "US", "USA",country_region)) %>% 
               select(-last_update)
 str(cleaned_df)  
-
+#-----------------------------------------------------------------------#
 maps <- unlist(cleaned_df %>% 
                 mutate(cleaned_names = str_replace_all(country_region, " ", "_")) %>% 
                 distinct(cleaned_names), use.names = F)
@@ -68,7 +65,7 @@ summary_df <- cleaned_df %>%
                 arrange(desc(deaths))
 #-----------------------------------------------------------------------#
 nrow(summary_df)
-
+#-----------------------------------------------------------------------#
 
 e_color_range(summary_df, deaths, colour_range, colors = brewer.pal(9,"Reds")) %>% 
   e_charts(cleaned_names) %>%
@@ -86,7 +83,7 @@ summary_df %>%
   e_charts(cleaned_names) %>% 
   e_geo_3d(death_pc, colour_range)
 
-library(echarts4r.maps)
+
 
 country_name <- "China"
 province_state_list province_summary_df %>% 
@@ -109,7 +106,6 @@ province_summary_df %>%
 deaths <- "deaths"
 province_summary_df %>% 
   filter(country_region == country_name) %>% 
-  e_color_range(deaths, colour_range, colors = brewer.pal(9,"Reds")) %>%
   e_charts(province_state) %>%
   em_map(country_name) %>% 
   e_map(deaths, map = country_name) %>% 

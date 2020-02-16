@@ -1,49 +1,31 @@
-states <- geojsonio::geojson_read("geo_json/ref/CNTR_BN_10M_2016_3857.geojson", what = "sp")
-topoData <- readLines("geo_json/provinces.json")
-class(states)
-names(states)
-states@data
+# install.packages("mapview")
+library(mapview)
 
-m <- leaflet(states) %>%
-  setView(-96, 37.8, 4) %>%
-  addTiles()
-m %>% addPolygons()
+nc2 <- read_sf("states_provinces/ne_10m_admin_1_states_provinces.shp", quiet = TRUE, as_tibble = T, stringsAsFactors = F) %>% 
+          select(country_region = admin, province_state = woe_name, name, type_en, postal, latitude, longitude, adm0_a3,  gns_name, geometry)
+str(nc2)
 
+str(nc2 %>% filter(admin == "Australia"))
 
-bins <- c(0, 10, 20, 50, 100, 200, 500, 1000, Inf)
-pal <- colorBin("YlOrRd", domain = states$density, bins = bins)
+mapview(nc2 %>% filter(admin == "Australia"), zcol="confirmed")
 
-
-m %>% addPolygons(
-  fillColor = ~pal(density),
-  weight = 2,
-  opacity = 1,
-  color = "white",
-  dashArray = "3",
-  fillOpacity = 0.7)
-provinces.json
-
-library(sf)
-countries <- rgdal::readOGR("geo_json/lau/LAU_2018.shp")
-countries@bbox
-class(countries)
+aus_df <- nc2 %>% filter(admin == "Australia")
+str(aus_df)
+st_as_sf(province_summary_df)
 
 
-nc <- st_read("geo_json/states_provinces/ne_10m_admin_1_states_provinces.shp", quiet = TRUE)
-# limit to first 2 counties
-#nc <- nc[1:2,]
-# convert to SpatialPolygonsDataFrame
-nc_sp <- as(nc, "Spatial")
-class(nc)
-glimpse(nc)
-view(as_tibble(nc) %>% filter(admin == "Australia"))
+province_summary_df <- cleaned_df %>% 
+  group_by(country_region, province_state) %>%
+  summarise(confirmed = sum(confirmed), deaths = sum(deaths), recovered = sum(recovered)) %>%
+  mutate(cleaned_names = str_replace_all(country_region, " ", "_")) %>%
+  arrange(desc(deaths))
 
-class(nc_sp)
-str(nc_sp)
+st_as_sf(province_summary_df %>% left_join(nc2))
 
-(nc_geom <- st_geometry(nc))
-st_geometry(nc) %>% class()
-attributes(nc_geom)
+leaflet(options = leafletOptions(zoomControl = FALSE,
+                                 minZoom = 3, maxZoom = 3,
+                                 dragging = FALSE))
 
-nc_geom[[1]] %>% class
+
+mapview(st_as_sf(province_summary_df %>% left_join(nc2)), zcol="deaths",colors = brewer.pal(9,"Reds"))
 
